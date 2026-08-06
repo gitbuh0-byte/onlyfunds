@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user owns the file
+    function isCreator(fileId) {
+      return request.auth != null && get(/databases/$(database)/documents/files/$(fileId)).data.creatorId == request.auth.uid;
+    }
+    
+    // Files
+    match /files/{fileId} {
+      allow read: if true; // Publicly readable metadata
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.creatorId == request.auth.uid;
+      
+      // Locked content
+      match /private/content {
+        allow read: if request.auth != null && (
+          isCreator(fileId) ||
+          exists(/databases/$(database)/documents/purchases/$(request.auth.token.email + "_" + fileId))
+        );
+        allow create, update: if request.auth != null && isCreator(fileId);
+        allow delete: if request.auth != null && isCreator(fileId);
+      }
+    }
+    
+    // Purchases
+    match /purchases/{purchaseId} {
+      // Anyone can create a purchase record (simulating payment success)
+      allow create: if true;
+      // Readable by buyer (matching email) or creator of the file
+      allow read: if request.auth != null && (
+        resource.data.buyerEmail == request.auth.token.email ||
+        resource.data.creatorId == request.auth.uid
+      );
+    }
+    
+    // Requests
+    match /requests/{requestId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && (
+        resource.data.requesterEmail == request.auth.token.email ||
+        resource.data.creatorId == request.auth.uid
+      );
+    }
+
+    // Users & Creator Profiles
+    match /users/{userId} {
+      allow read: if true; // Publicly readable creator profiles
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
