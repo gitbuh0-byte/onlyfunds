@@ -195,6 +195,7 @@ export default function App() {
     fileData: string;
     socialLinks: any[];
     coverUrl?: string;
+    thumbnailUrl?: string;
     previewFiles?: any[];
   }) => {
     if (!user) return;
@@ -204,6 +205,8 @@ export default function App() {
       // Create random ID
       const fileId = "of_" + Math.random().toString(36).substring(2, 11);
       
+      const chosenThumbnail = fileDetails.thumbnailUrl || fileDetails.coverUrl || undefined;
+
       // Document 1: Public Metadata
       const fileMetadataRef = doc(db, "files", fileId);
       const metadataPayload: SharedFile = {
@@ -218,7 +221,8 @@ export default function App() {
         creatorEmail: user.email || "",
         createdAt: new Date(),
         socialLinks: fileDetails.socialLinks,
-        coverUrl: fileDetails.coverUrl,
+        coverUrl: fileDetails.coverUrl || chosenThumbnail,
+        thumbnailUrl: chosenThumbnail,
         purchasesCount: 0,
         totalEarnings: 0,
         previewFiles: fileDetails.previewFiles || []
@@ -258,6 +262,7 @@ export default function App() {
       console.error("Asset creation error:", error);
       // Fallback local creation
       const fallbackId = "of_" + Math.random().toString(36).substring(2, 11);
+      const chosenThumbnail = fileDetails.thumbnailUrl || fileDetails.coverUrl || undefined;
       const fallbackPayload: SharedFile = {
         id: fallbackId,
         title: fileDetails.title,
@@ -270,7 +275,8 @@ export default function App() {
         creatorEmail: user.email || "",
         createdAt: new Date(),
         socialLinks: fileDetails.socialLinks,
-        coverUrl: fileDetails.coverUrl,
+        coverUrl: fileDetails.coverUrl || chosenThumbnail,
+        thumbnailUrl: chosenThumbnail,
         purchasesCount: 0,
         totalEarnings: 0,
         previewFiles: fileDetails.previewFiles || []

@@ -36,6 +36,7 @@ export interface SharedFile {
   createdAt: any; // Firestore Timestamp
   socialLinks: SocialLink[];
   coverUrl?: string;
+  thumbnailUrl?: string;
   purchasesCount: number;
   totalEarnings: number;
   previewFiles?: PreviewFileItem[];

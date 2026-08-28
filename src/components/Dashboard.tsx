@@ -3,7 +3,8 @@ import { User } from "firebase/auth";
 import { 
   DollarSign, Download, Share2, Clipboard, Mail, ArrowRight, UserCheck, Inbox, 
   ExternalLink, FileText, CheckCircle, Clock, Check, Plus, UploadCloud, ChevronDown, ChevronUp, Users, Send, AlertCircle, Settings, Search,
-  Edit3, Trash2, Wallet, Smartphone, Building2, Coins, ArrowUpRight, Copy, X, CheckCircle2, ShieldCheck, Sparkles, Receipt, XCircle, Filter, QrCode, RefreshCw
+  Edit3, Trash2, Wallet, Smartphone, Building2, Coins, ArrowUpRight, Copy, X, CheckCircle2, ShieldCheck, Sparkles, Receipt, XCircle, Filter, QrCode, RefreshCw,
+  Image as ImageIcon, Video, FileCode, ZoomIn, Eye, Layers
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { SharedFile, PurchaseRecord, FileRequest, WithdrawalRecord } from "../types";
@@ -12,6 +13,7 @@ import { db } from "../lib/firebase";
 import FileUploader from "./FileUploader";
 import SocialPreview from "./SocialPreview";
 import EmailTemplate from "./EmailTemplate";
+import { AssetPreviewModal } from "./AssetPreviewModal";
 import { Currency, WORLD_CURRENCIES, formatPrice } from "../lib/currencies";
 
 interface DashboardProps {
@@ -188,6 +190,7 @@ export default function Dashboard({
   const [historyStatusFilter, setHistoryStatusFilter] = useState<"all" | "pending" | "completed" | "failed">("all");
   const [historySearchQuery, setHistorySearchQuery] = useState("");
   const [selectedReceipt, setSelectedReceipt] = useState<WithdrawalRecord | null>(null);
+  const [selectedPreviewAsset, setSelectedPreviewAsset] = useState<SharedFile | null>(null);
 
   // Detail toggle for social previews and email layouts
   const [expandedFileId, setExpandedFileId] = useState<string | null>(null);
@@ -1468,26 +1471,113 @@ export default function Dashboard({
                     )}
 
                     {/* Top basic block */}
-                    <div className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div className="flex items-start space-x-3 text-left">
-                        <div className="p-3 bg-gray-100 dark:bg-zinc-800 text-teal-600 dark:text-teal-400 rounded-xl">
-                          <FileText className="w-5 h-5" />
+                    <div className="p-5 sm:p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
+                      <div className="flex items-start space-x-4 text-left w-full lg:w-auto">
+                        
+                        {/* Preview Thumbnail Container */}
+                        <div className="relative group shrink-0">
+                          {file.thumbnailUrl || file.coverUrl ? (
+                            <div 
+                              onClick={() => setSelectedPreviewAsset(file)}
+                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-800 bg-gray-100 dark:bg-zinc-950 relative cursor-pointer shadow-xs hover:border-teal-500 hover:ring-2 hover:ring-teal-500/20 transition-all"
+                              title="Click to view full preview thumbnail & media viewer"
+                            >
+                              <img
+                                src={file.thumbnailUrl || file.coverUrl}
+                                alt={file.title}
+                                className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-300"
+                                onError={(e) => {
+                                  // fallback if image fails to load
+                                  (e.target as HTMLElement).style.display = "none";
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                <ZoomIn className="w-5 h-5 drop-shadow-md" />
+                              </div>
+                              <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/75 backdrop-blur-xs rounded-md text-[9px] font-black text-white font-mono uppercase tracking-wider">
+                                {file.fileType === "image" ? "IMG" : file.fileType === "video" ? "VID" : file.fileType === "document" ? "DOC" : "ASSET"}
+                              </div>
+                            </div>
+                          ) : (
+                            <div 
+                              onClick={() => setSelectedPreviewAsset(file)}
+                              className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-teal-50 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900/40 text-teal-600 dark:text-teal-400 flex flex-col items-center justify-center shrink-0 cursor-pointer hover:border-teal-400 hover:ring-2 hover:ring-teal-500/20 transition-all"
+                              title="Click to view preview modal"
+                            >
+                              {file.fileType === "video" ? (
+                                <Video className="w-6 h-6" />
+                              ) : file.fileType === "image" ? (
+                                <ImageIcon className="w-6 h-6" />
+                              ) : (
+                                <FileText className="w-6 h-6" />
+                              )}
+                              <span className="text-[9px] font-black uppercase tracking-wider mt-1 font-mono">
+                                {file.fileType}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <h3 className="text-base font-bold text-gray-900 dark:text-white">{file.title}</h3>
-                          <p className="text-xs text-gray-500 dark:text-zinc-400 mt-1 font-mono">
-                            File: {file.fileName} • Cost: <span className="font-bold text-gray-900 dark:text-white">{formatPrice(file.fee, selectedCurrency)}</span>
-                          </p>
+
+                        {/* Title, File Details, & Metrics */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 
+                              onClick={() => setSelectedPreviewAsset(file)}
+                              className="text-base font-extrabold text-gray-900 dark:text-white truncate cursor-pointer hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                              title="Click to open preview modal"
+                            >
+                              {file.title}
+                            </h3>
+                            <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[10px] font-black rounded-lg font-mono">
+                              {formatPrice(file.fee, selectedCurrency)}
+                            </span>
+                          </div>
+
+                          {file.description && (
+                            <p className="text-xs text-gray-600 dark:text-zinc-400 mt-1 line-clamp-1 max-w-xl">
+                              {file.description}
+                            </p>
+                          )}
+
+                          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-zinc-400 mt-2 font-mono">
+                            <span className="flex items-center gap-1 font-semibold text-gray-700 dark:text-zinc-300">
+                              <FileText className="w-3.5 h-3.5 text-teal-500" />
+                              <span className="truncate max-w-[140px] sm:max-w-[200px]">{file.fileName}</span>
+                            </span>
+                            <span>•</span>
+                            <span>{file.purchasesCount || 0} unlocks</span>
+                            <span>•</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                              ${((file.totalEarnings || 0) * 0.95).toFixed(2)} net
+                            </span>
+                            {file.previewFiles && file.previewFiles.length > 0 && (
+                              <>
+                                <span>•</span>
+                                <span className="text-teal-600 dark:text-teal-400 font-semibold">
+                                  {file.previewFiles.filter(p => p.isUnblurred).length}/{file.previewFiles.length} teasers
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto justify-start lg:justify-end shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-gray-100 dark:border-zinc-800">
+                        <button
+                          onClick={() => setSelectedPreviewAsset(file)}
+                          className="flex items-center space-x-1.5 px-3 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl transition-all cursor-pointer text-gray-800 dark:text-zinc-200"
+                          title="Open full interactive preview modal"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-teal-500" />
+                          <span>Preview</span>
+                        </button>
+
                         <button
                           onClick={() => handleCopyLink(file.id)}
-                          className="flex items-center space-x-1.5 px-3 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                          className="flex items-center space-x-1.5 px-3 py-2 bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
                         >
                           {copiedId === file.id ? <Check className="w-3.5 h-3.5 text-teal-500" /> : <Clipboard className="w-3.5 h-3.5 text-gray-500" />}
-                          <span>{copiedId === file.id ? "Copied" : "Copy Paywall Link"}</span>
+                          <span>{copiedId === file.id ? "Copied" : "Copy Link"}</span>
                         </button>
 
                         <button
@@ -1496,14 +1586,14 @@ export default function Dashboard({
                           title="Generate Mobile QR Code"
                         >
                           <QrCode className="w-3.5 h-3.5" />
-                          <span>QR Code</span>
+                          <span>QR</span>
                         </button>
 
                         <button
                           onClick={() => setExpandedFileId(isExpanded ? null : file.id)}
-                          className="flex items-center space-x-1 px-3 py-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 text-xs font-bold rounded-xl hover:bg-teal-500/20 transition-all"
+                          className="flex items-center space-x-1 px-3 py-2 bg-teal-500/10 text-teal-600 dark:text-teal-400 text-xs font-bold rounded-xl hover:bg-teal-500/20 transition-all cursor-pointer"
                         >
-                          <span>{isExpanded ? "Collapse Promos" : "Configure Promos"}</span>
+                          <span>{isExpanded ? "Hide Promos" : "Promos & Details"}</span>
                           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         </button>
 
@@ -1511,7 +1601,7 @@ export default function Dashboard({
                           href={fileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 bg-zinc-900 text-white hover:bg-zinc-850 rounded-xl text-xs font-bold"
+                          className="p-2 bg-zinc-900 text-white hover:bg-zinc-850 rounded-xl text-xs font-bold transition-all"
                           title="Open Live Paywall"
                         >
                           <ExternalLink className="w-4 h-4" />
@@ -1520,7 +1610,7 @@ export default function Dashboard({
                         {onDeleteFile && (
                           <button
                             onClick={() => onDeleteFile(file.id)}
-                            className="p-2 bg-rose-500/10 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold transition-all"
+                            className="p-2 bg-rose-500/10 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold transition-all cursor-pointer"
                             title="Delete Paywall Link"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -2232,6 +2322,16 @@ export default function Dashboard({
           </div>
         </div>
       )}
+
+      {/* Asset Preview & Media Inspector Modal */}
+      <AssetPreviewModal
+        file={selectedPreviewAsset}
+        isOpen={!!selectedPreviewAsset}
+        onClose={() => setSelectedPreviewAsset(null)}
+        selectedCurrency={selectedCurrency}
+        onCopyLink={handleCopyLink}
+        isCopied={copiedId === selectedPreviewAsset?.id}
+      />
 
       {/* Floating Toast Notification Banner */}
       {toast.show && (

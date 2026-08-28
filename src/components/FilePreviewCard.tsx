@@ -26,7 +26,7 @@ export default function FilePreviewCard({
   const [inspectComparison, setInspectComparison] = useState(false);
 
   // Default fallback image depending on file type if coverUrl is missing
-  const defaultImage = file.coverUrl || (
+  const defaultImage = file.thumbnailUrl || file.coverUrl || (
     file.fileType === "video" 
       ? "https://images.unsplash.com/photo-1536240478700-b869070f9279?w=800"
       : file.fileType === "document"

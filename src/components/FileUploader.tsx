@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Upload, X, DollarSign, Plus, Link, Check, AlertCircle, FileText, Video, Image, FileCode, Eye, EyeOff, Lock, Sparkles } from "lucide-react";
+import { Upload, X, DollarSign, Plus, Link, Check, AlertCircle, FileText, Video, Image as ImageIcon, FileCode, Eye, EyeOff, Lock, Sparkles, UploadCloud, RefreshCw } from "lucide-react";
 import { SocialLink, PreviewFileItem } from "../types";
 import { Currency } from "../lib/currencies";
 
@@ -14,6 +14,7 @@ interface FileUploaderProps {
     fileData: string;
     socialLinks: SocialLink[];
     coverUrl?: string;
+    thumbnailUrl?: string;
     previewFiles?: PreviewFileItem[];
   }) => Promise<void>;
   isSubmitting: boolean;
@@ -26,12 +27,18 @@ export default function FileUploader({ onUploadSuccess, isSubmitting, selectedCu
   const [fileBase64, setFileBase64] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Thumbnail preview states
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailBase64, setThumbnailBase64] = useState<string>("");
+  const [coverUrl, setCoverUrl] = useState("");
+  const [isProcessingThumbnail, setIsProcessingThumbnail] = useState(false);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
+
   // Form states
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [writtenInfo, setWrittenInfo] = useState("");
   const [fee, setFee] = useState<string>("5.00");
-  const [coverUrl, setCoverUrl] = useState("");
   
   // Social media handles state
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
@@ -64,6 +71,61 @@ export default function FileUploader({ onUploadSuccess, isSubmitting, selectedCu
     } else if (e.type === "dragleave") {
       setDragActive(false);
     }
+  };
+
+  // Helper to compress images for lightweight preview thumbnails (~30KB-60KB)
+  const compressToThumbnail = (dataUrl: string, maxWidth = 480, quality = 0.8): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = dataUrl;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth || height > maxWidth) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxWidth) / height);
+            height = maxWidth;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => {
+        resolve(dataUrl.length > 100000 ? dataUrl.substring(0, 100000) : dataUrl);
+      };
+    });
+  };
+
+  // Process small preview thumbnail upload
+  const handleThumbnailSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith("image/")) return;
+      setIsProcessingThumbnail(true);
+      setThumbnailFile(file);
+
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const raw = (ev.target?.result as string) || "";
+        const compressedThumb = await compressToThumbnail(raw, 400, 0.75);
+        setThumbnailBase64(compressedThumb);
+        setIsProcessingThumbnail(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeThumbnail = () => {
+    setThumbnailFile(null);
+    setThumbnailBase64("");
+    if (thumbnailInputRef.current) thumbnailInputRef.current.value = "";
   };
 
   const processFile = (file: File) => {
@@ -218,17 +280,20 @@ export default function FileUploader({ onUploadSuccess, isSubmitting, selectedCu
 
     const fileType = determineFileType(selectedFile.name);
     
-    // Choose a fallback cover picture depending on category if none specified
-    let finalCoverUrl = coverUrl;
-    if (!finalCoverUrl) {
-      if (fileType === "image") {
-        finalCoverUrl = fileBase64; // Use base64 thumbnail of the image itself
+    // Choose thumbnail and cover picture
+    let finalThumbnail = thumbnailBase64 || coverUrl;
+    if (!finalThumbnail) {
+      if (fileType === "image" && fileBase64) {
+        // If main file is an image, compress to thumbnail
+        finalThumbnail = await compressToThumbnail(fileBase64, 400, 0.75);
       } else if (fileType === "video") {
-        finalCoverUrl = "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800";
+        finalThumbnail = "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800";
       } else {
-        finalCoverUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800";
+        finalThumbnail = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800";
       }
     }
+
+    const finalCoverUrl = coverUrl || finalThumbnail;
 
     await onUploadSuccess({
       title,
@@ -240,12 +305,15 @@ export default function FileUploader({ onUploadSuccess, isSubmitting, selectedCu
       fileData: fileBase64,
       socialLinks,
       coverUrl: finalCoverUrl,
+      thumbnailUrl: finalThumbnail,
       previewFiles
     });
 
     // Reset Form
     setSelectedFile(null);
     setFileBase64("");
+    setThumbnailFile(null);
+    setThumbnailBase64("");
     setTitle("");
     setDescription("");
     setWrittenInfo("");
@@ -312,7 +380,7 @@ export default function FileUploader({ onUploadSuccess, isSubmitting, selectedCu
                 <div className="p-3 bg-teal-600 text-white rounded-xl">
                   {determineFileType(selectedFile.name) === "document" && <FileText className="w-5 h-5" />}
                   {determineFileType(selectedFile.name) === "video" && <Video className="w-5 h-5" />}
-                  {determineFileType(selectedFile.name) === "image" && <Image className="w-5 h-5" />}
+                  {determineFileType(selectedFile.name) === "image" && <ImageIcon className="w-5 h-5" />}
                   {determineFileType(selectedFile.name) === "other" && <FileCode className="w-5 h-5" />}
                 </div>
                 <div className="truncate text-left">
@@ -448,7 +516,7 @@ export default function FileUploader({ onUploadSuccess, isSubmitting, selectedCu
                     item.isUnblurred ? "bg-emerald-600" : "bg-zinc-700"
                   }`}>
                     {item.fileType === "document" && <FileText className="w-4 h-4" />}
-                    {item.fileType === "image" && <Image className="w-4 h-4" />}
+                    {item.fileType === "image" && <ImageIcon className="w-4 h-4" />}
                     {item.fileType === "video" && <Video className="w-4 h-4" />}
                     {item.fileType === "code" && <FileCode className="w-4 h-4" />}
                     {item.fileType === "other" && <FileCode className="w-4 h-4" />}
@@ -527,19 +595,143 @@ export default function FileUploader({ onUploadSuccess, isSubmitting, selectedCu
           </div>
         </div>
 
-        {/* Custom Cover Art URL optional */}
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-gray-700 dark:text-zinc-300 uppercase tracking-wider">
-            Custom Card Cover Image URL (Optional)
-          </label>
-          <input
-            type="url"
-            id="file-input-cover-url"
-            placeholder="https://images.unsplash.com/photo-example... (defaults to high-quality fallback category art)"
-            value={coverUrl}
-            onChange={(e) => setCoverUrl(e.target.value)}
-            className="w-full px-4 h-11 bg-gray-50 dark:bg-zinc-950 border border-gray-200 dark:border-zinc-800 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-xl text-sm transition-all text-gray-900 dark:text-white"
-          />
+        {/* Preview Thumbnail Image Upload Section */}
+        <div className="space-y-3 bg-gray-50/70 dark:bg-zinc-950/60 p-5 rounded-2xl border border-gray-200 dark:border-zinc-800 text-left">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <label className="block text-xs font-extrabold text-gray-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                <span>Asset Preview Thumbnail Image (Optional)</span>
+              </label>
+              <p className="text-[11px] text-gray-500 dark:text-zinc-400 mt-0.5">
+                Upload a small teaser or cover thumbnail image shown in your Dashboard asset list and on public paywall cards.
+              </p>
+            </div>
+            {thumbnailBase64 && (
+              <span className="text-[10px] font-mono font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 px-2.5 py-1 rounded-full border border-teal-500/30 flex items-center gap-1">
+                <Check className="w-3 h-3 text-teal-500" />
+                <span>Thumbnail Ready</span>
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+            {/* Thumbnail Box / Upload Trigger */}
+            <div className="sm:col-span-5">
+              <input
+                ref={thumbnailInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleThumbnailSelect}
+              />
+
+              {thumbnailBase64 ? (
+                <div className="relative group rounded-2xl overflow-hidden border border-teal-500/40 bg-black/5 dark:bg-black/40 aspect-video flex items-center justify-center">
+                  <img
+                    src={thumbnailBase64}
+                    alt="Uploaded preview thumbnail"
+                    className="w-full h-full object-cover rounded-xl"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                    <button
+                      type="button"
+                      onClick={() => thumbnailInputRef.current?.click()}
+                      className="px-2.5 py-1.5 bg-white/90 hover:bg-white text-gray-900 rounded-lg text-xs font-bold transition-transform hover:scale-105"
+                    >
+                      Change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={removeThumbnail}
+                      className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-transform hover:scale-105"
+                      title="Remove thumbnail"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => thumbnailInputRef.current?.click()}
+                  className="border-2 border-dashed border-gray-200 dark:border-zinc-800 hover:border-teal-500 rounded-2xl p-4 text-center cursor-pointer transition-all bg-white dark:bg-zinc-900/60 aspect-video flex flex-col items-center justify-center hover:bg-teal-50/20"
+                >
+                  {isProcessingThumbnail ? (
+                    <div className="space-y-1 flex flex-col items-center">
+                      <RefreshCw className="w-5 h-5 text-teal-600 animate-spin" />
+                      <span className="text-[11px] font-bold text-teal-600">Compressing...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-1.5">
+                        <UploadCloud className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-bold text-gray-800 dark:text-zinc-200">
+                        Upload Thumbnail Image
+                      </span>
+                      <span className="text-[10px] text-gray-400 mt-0.5">
+                        PNG, JPG, WebP (auto-compressed)
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Alternate URL Input & Quick Cover Presets */}
+            <div className="sm:col-span-7 space-y-2.5">
+              <div className="space-y-1">
+                <label className="block text-[10px] font-bold text-gray-600 dark:text-zinc-400 uppercase tracking-wider">
+                  Or Paste Image URL
+                </label>
+                <div className="relative flex items-center">
+                  <Link className="absolute left-3 w-3.5 h-3.5 text-gray-400" />
+                  <input
+                    type="url"
+                    id="file-input-cover-url"
+                    placeholder="https://images.unsplash.com/..."
+                    value={coverUrl}
+                    onChange={(e) => {
+                      setCoverUrl(e.target.value);
+                      if (e.target.value && !thumbnailBase64) {
+                        // Keep coverUrl sync
+                      }
+                    }}
+                    className="w-full pl-8 pr-3 py-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 focus:border-teal-500 rounded-xl text-xs text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Quick Preset Badges */}
+              <div className="space-y-1">
+                <span className="text-[10px] text-gray-400 font-medium">Quick Art Presets:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: "Modern Minimal", url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800" },
+                    { label: "Tech / Code", url: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800" },
+                    { label: "Audio / Video", url: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=800" },
+                    { label: "Documents", url: "https://images.unsplash.com/photo-1568667256549-094345857637?w=800" },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        setCoverUrl(preset.url);
+                        setThumbnailBase64("");
+                      }}
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all ${
+                        coverUrl === preset.url && !thumbnailBase64
+                          ? "bg-teal-600 text-white border-teal-600 shadow-xs"
+                          : "bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 text-gray-600 dark:text-zinc-400 hover:border-teal-400"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Social Media Link Builder */}
