@@ -15,6 +15,7 @@ import { Currency, WORLD_CURRENCIES } from "./lib/currencies";
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   
   // Auth transition loader states (1.5 seconds)
   const [isAuthTransitioning, setIsAuthTransitioning] = useState(false);
@@ -129,6 +130,7 @@ export default function App() {
 
   // 5. Auth Action Handlers
   const handleGoogleLogin = async () => {
+    setAuthError(null);
     try {
       const signedInUser = await loginWithGoogle();
       if (signedInUser) {
@@ -139,6 +141,15 @@ export default function App() {
       }
     } catch (err) {
       console.error("Login popup failed:", err);
+      const code = (err as { code?: string }).code;
+      const message = code === "auth/popup-blocked"
+        ? "Your browser blocked the Google sign-in popup. Allow popups for this site and try again."
+        : code === "auth/unauthorized-domain"
+        ? `This address is not authorized for Firebase sign-in. Add ${window.location.hostname} in Firebase Authentication > Settings > Authorized domains.`
+        : code === "auth/popup-closed-by-user"
+        ? "The sign-in popup was closed before login completed."
+        : "Google sign-in could not be completed. Check the browser console for the Firebase error code.";
+      setAuthError(message);
     } finally {
       setIsAuthTransitioning(false);
       setTransitionType(null);
@@ -346,6 +357,11 @@ export default function App() {
       />
 
       <main className="flex-grow">
+        {authError && currentView === "landing" && (
+          <div role="alert" className="max-w-3xl mx-auto mt-4 px-5 py-3 rounded-xl border border-rose-300 bg-rose-50 text-rose-700 text-xs font-medium text-center">
+            {authError}
+          </div>
+        )}
         {authLoading ? (
           <div className="min-h-[80vh] flex flex-col items-center justify-center p-8">
             <div className="mb-4">
@@ -390,15 +406,18 @@ export default function App() {
          )}
        </main>
  
-       {/* Persistent platform status bar */}
-       <footer className="bg-white dark:bg-zinc-950 border-t border-gray-100 dark:border-zinc-900 py-6 text-center text-xs text-gray-500 dark:text-zinc-500 font-sans">
-         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-           <div className="flex items-center space-x-1">
-             <OnlyFundsLogo iconClassName="w-5 h-5" textClassName="text-sm font-bold" />
-             <span>© 2026 Sandbox Escrow Service</span>
-           </div>
-         </div>
-       </footer>
+      <footer className={currentView === "landing" ? "bg-zinc-950 text-white py-12 font-sans" : "bg-white dark:bg-zinc-950 border-t border-gray-100 dark:border-zinc-900 py-6 text-center text-xs text-gray-500 dark:text-zinc-500 font-sans"}>
+        {currentView === "landing" ? (
+          <div className="max-w-7xl mx-auto px-5 sm:px-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-left">
+            <div className="col-span-2 md:col-span-1"><OnlyFundsLogo iconClassName="w-7 h-7" textClassName="text-lg text-white" /><p className="text-xs text-zinc-500 mt-4 max-w-xs leading-relaxed">A considered way to share valuable work, collect payment, and keep your files private.</p></div>
+            <div><p className="text-[10px] font-mono uppercase tracking-widest text-teal-400">Platform</p><div className="mt-4 space-y-2 text-xs text-zinc-400"><p>Creator dashboard</p><p>Paid share links</p><p>Wallet & payouts</p></div></div>
+            <div><p className="text-[10px] font-mono uppercase tracking-widest text-teal-400">Support</p><div className="mt-4 space-y-2 text-xs text-zinc-400"><p>How it works</p><p>Asset security</p><p>Contact us</p></div></div>
+            <div><p className="text-[10px] font-mono uppercase tracking-widest text-teal-400">OnlyFunds ledger</p><p className="mt-4 text-xs text-zinc-400 leading-relaxed">© 2026 OnlyFunds Sandbox Escrow Service.</p></div>
+          </div>
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4"><div className="flex items-center space-x-1"><OnlyFundsLogo iconClassName="w-5 h-5" textClassName="text-sm font-bold" /><span>© 2026 Sandbox Escrow Service</span></div></div>
+        )}
+      </footer>
     </div>
   );
 }

@@ -1220,9 +1220,9 @@ export default function Dashboard({
                     if (historySearchQuery.trim()) {
                       const q = historySearchQuery.toLowerCase();
                       const matchRecipient = item.recipient.toLowerCase().includes(q);
-                      const matchRef = item.transactionRef.toLowerCase().includes(q);
+                      const matchRef = (item.transactionRef ?? "").toLowerCase().includes(q);
                       const matchMethod = item.method.toLowerCase().includes(q);
-                      const matchNetwork = item.networkOrBank.toLowerCase().includes(q);
+                      const matchNetwork = (item.networkOrBank ?? "").toLowerCase().includes(q);
                       return matchRecipient || matchRef || matchMethod || matchNetwork;
                     }
 
@@ -2217,7 +2217,7 @@ export default function Dashboard({
               <div className="bg-gray-50 dark:bg-zinc-950 p-4 rounded-2xl border border-gray-100 dark:border-zinc-850 text-center space-y-1">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block font-mono">Payout Amount</span>
                 <p className="text-3xl font-black text-teal-600 dark:text-teal-400">
-                  {formatPrice(selectedReceipt.amount, selectedCurrency)}
+                  {formatPrice(selectedReceipt.amountUSD, selectedCurrency)}
                 </p>
                 <div className="flex items-center justify-center gap-1.5 mt-2">
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
@@ -2239,14 +2239,14 @@ export default function Dashboard({
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-850">
                   <span className="text-gray-400">Destination</span>
-                  <span className="font-mono font-bold text-gray-900 dark:text-white truncate max-w-[200px]" title={selectedReceipt.destinationAddress}>
-                    {selectedReceipt.destinationAddress}
+                  <span className="font-mono font-bold text-gray-900 dark:text-white truncate max-w-[200px]" title={selectedReceipt.recipient}>
+                    {selectedReceipt.recipient}
                   </span>
                 </div>
                 <div className="flex justify-between py-1.5 border-b border-gray-100 dark:border-zinc-850">
                   <span className="text-gray-400">Date & Time</span>
                   <span className="font-semibold text-gray-700 dark:text-zinc-300">
-                    {selectedReceipt.timestamp ? new Date(selectedReceipt.timestamp.seconds ? selectedReceipt.timestamp.seconds * 1000 : selectedReceipt.timestamp).toLocaleString() : "N/A"}
+                    {selectedReceipt.createdAt ? new Date(selectedReceipt.createdAt.seconds ? selectedReceipt.createdAt.seconds * 1000 : selectedReceipt.createdAt).toLocaleString() : "N/A"}
                   </span>
                 </div>
               </div>

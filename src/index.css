@@ -56,3 +56,31 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Keep the landing product block readable when light mode is selected. */
+.light #landing-page section:nth-of-type(3) > div:first-child {
+  background-color: #f4f4f5;
+  color: #18181b;
+}
+
+.light #landing-page section:nth-of-type(3) > div:first-child .bg-zinc-900 {
+  background-color: #ffffff;
+  border-color: #d4d4d8;
+}
+
+.light #landing-page section:nth-of-type(3) > div:first-child .bg-zinc-800 {
+  background-color: #e4e4e7;
+}
+
+.light #landing-page section:nth-of-type(3) > div:first-child .text-white {
+  color: #18181b;
+}
+
+.light #landing-page section:nth-of-type(3) > div:first-child .text-zinc-400,
+.light #landing-page section:nth-of-type(3) > div:first-child .text-zinc-500 {
+  color: #52525b;
+}
+
+#landing-page section:nth-of-type(3) [class~="sm:col-span-2"] {
+  display: none;
+}

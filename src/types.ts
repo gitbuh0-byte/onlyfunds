@@ -7,6 +7,8 @@ export interface PreviewFileItem {
   id: string;
   name: string;
   url?: string;
+  fileData?: string;
+  fileName?: string;
   fileType: "document" | "image" | "video" | "code" | "other";
   isUnblurred: boolean; // Up to 2 files can be true (unblurred teaser)
   size?: string;

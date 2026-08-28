@@ -1,5 +1,5 @@
 import { User } from "firebase/auth";
-import { LogIn, LogOut, LayoutDashboard, Wallet, Menu, X } from "lucide-react";
+import { LogIn, LogOut, LayoutDashboard, Wallet, Menu, X, ArrowUpRight } from "lucide-react";
 import ThemeSelector, { Theme } from "./ThemeSelector";
 import { useState } from "react";
 import { OnlyFundsLogo } from "./OnlyFundsLogo";
@@ -27,8 +27,12 @@ export default function Navbar({
 }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const scrollToLandingSection = (selector: string) => {
+    document.querySelector(selector)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
-    <nav id="app-navbar" className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-gray-100 dark:border-zinc-800 transition-colors duration-300">
+    <nav id="app-navbar" className="sticky top-0 z-50 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo Brand Emblem */}
@@ -37,7 +41,7 @@ export default function Navbar({
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-7">
             {user ? (
               <button
                 id="nav-btn-wallet"
@@ -52,14 +56,7 @@ export default function Navbar({
                 <span>Wallet</span>
               </button>
             ) : (
-              <button
-                id="nav-btn-wallet"
-                onClick={onLogin}
-                className="flex items-center space-x-1.5 text-sm font-bold text-gray-600 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                <Wallet className="w-4 h-4 text-emerald-500" />
-                <span>Wallet</span>
-              </button>
+              <><a href="#how-it-works" className="text-xs font-bold text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition-colors">How it works</a><a href="#for-creators" onClick={(event) => { event.preventDefault(); scrollToLandingSection("#landing-page main section:nth-of-type(2)"); }} className="text-xs font-bold text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition-colors">For creators</a><a href="#security" onClick={(event) => { event.preventDefault(); scrollToLandingSection("#landing-page main section:nth-of-type(3)"); }} className="text-xs font-bold text-zinc-500 hover:text-zinc-950 dark:hover:text-white transition-colors">Security</a></>
             )}
 
             {user && (
@@ -113,10 +110,9 @@ export default function Navbar({
               <button
                 id="nav-login-btn"
                 onClick={onLogin}
-                className="flex items-center space-x-2 px-4 h-9 bg-teal-600 dark:bg-teal-500 text-white rounded-lg text-sm font-medium hover:bg-teal-700 dark:hover:bg-teal-600 shadow-sm transition-all duration-200"
+                className="flex items-center space-x-1.5 px-4 h-9 bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 rounded-full text-xs font-bold hover:bg-teal-600 dark:hover:bg-teal-400 shadow-sm transition-all duration-200"
               >
-                <LogIn className="w-4 h-4" />
-                <span>Login with Google</span>
+                <span>Get started</span><ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
