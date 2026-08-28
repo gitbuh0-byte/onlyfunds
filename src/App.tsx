@@ -35,7 +35,8 @@ export default function App() {
 
   // Theme states
   const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem("theme") as Theme) || "light";
+    const savedTheme = localStorage.getItem("theme");
+    return savedTheme === "dark" ? "dark" : "light";
   });
 
   // Currency states
