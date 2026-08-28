@@ -25,10 +25,10 @@ export default function LandingPage({ user, onLogin, onNavigateToDashboard }: La
         <section className="max-w-7xl mx-auto px-5 sm:px-8 pt-10 sm:pt-16 pb-8">
           <div className="grid lg:grid-cols-[0.92fr_1.08fr] gap-8 lg:gap-16 items-center">
             <div className="order-2 lg:order-1">
-              <div className="relative aspect-[1.08/1] max-w-xl mx-auto lg:max-w-none overflow-hidden rounded-[2rem] bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 sm:p-8">
+              <div className="relative aspect-auto sm:aspect-[1.08/1] min-h-[390px] sm:min-h-0 max-w-xl mx-auto lg:max-w-none overflow-hidden rounded-[2rem] bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-8">
                 <div className="absolute -right-16 -top-16 w-48 h-48 border-[24px] border-teal-500/20 rounded-full" />
                 <div className="absolute left-8 bottom-8 w-28 h-28 border border-emerald-500/50 rounded-full" />
-                <div className="relative h-full rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-hidden rotate-[-2deg]">
+                <div className="relative min-h-full rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 shadow-xl overflow-visible rotate-[-2deg]">
                   <div className="h-10 px-4 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800">
                     <div className="flex gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-400" /><span className="w-2 h-2 rounded-full bg-amber-400" /><span className="w-2 h-2 rounded-full bg-emerald-400" /></div>
                     <span className="text-[9px] font-mono text-zinc-400">onlyfunds</span>
