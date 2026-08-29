@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // Read config (in browser environment, we'll fetch or import it. Since this is built with Vite, 
@@ -28,11 +28,20 @@ export const db = config.firestoreDatabaseId && config.firestoreDatabaseId !== "
 
 // Auth Helpers
 export const loginWithGoogle = async () => {
+  const provider = new GoogleAuthProvider();
+
   try {
-    const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     return result.user;
   } catch (error) {
+    const code = (error as { code?: string })?.code;
+
+    if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user") {
+      console.warn("Google popup blocked; falling back to redirect auth.", error);
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
+
     console.error("Google Auth login failed:", error);
     throw error;
   }
